@@ -1,21 +1,49 @@
 from tkinter import *
 
 
-class Snake:
-    def __init__(self, canvas):
-        self.canvas = canvas
+class Game:
+    def __init__(self, width=600, height=600, speed=100):
+        self.width = width
+        self.height = height
+        self.speed = speed
 
+        self.canvas = Canvas(window, width=self.width, height=self.height, bd=0)
+        self.canvas.pack()
         self.canvas.focus_set()
-        self.canvas.bind('<Key>', self.handle_keypress)
+
+        self.canvas.bind('<Key>', self.set_snake_direction)
+
+        self.snake = Snake(self.canvas)
+        self.snake.spawn(start_x=300, start_y=300)
+
+    def set_snake_direction(self, event):
+        self.snake.next_direction = event.keysym
+
+    def end(self):
+        game_over_text = self.canvas.create_text(self.width/2, self.height/2)
+        self.canvas.itemconfig(game_over_text, text='GAME OVER')
+        self.canvas.itemconfig(self.snake.head, fill='red')
+
+    def draw(self):
+        if self.snake.check_if_dead():
+            self.end()
+            return
+
+        self.snake.move()
+
+        self.canvas.after(self.speed, self.draw)
+
+
+class Snake:
+    def __init__(self, canvas, length=10, size=20):
+        self.canvas = canvas
+        self.length = length
+        self.size = size
 
         self.direction = 'Right'
         self.next_direction = self.direction
 
-        self.length = 11
-        self.size = 20
         self.body_parts = []
-
-        self.build_snake(start_x=300, start_y=300)
 
     @property
     def head(self):
@@ -24,7 +52,7 @@ class Snake:
     @property
     def head_coords(self):
         return self.canvas.coords(self.head)
-    
+
     @property
     def next_head_coords(self):
         next_head_coords = self.head_coords
@@ -42,8 +70,8 @@ class Snake:
             next_head_coords[3] += self.size
         return next_head_coords
 
-    def build_snake(self, start_x, start_y):
-        head = canvas.create_rectangle(
+    def spawn(self, start_x, start_y):
+        head = self.canvas.create_rectangle(
             start_x, start_y, (start_x + self.size), (start_y + self.size),
             fill='dark green', outline='black'
         )
@@ -58,9 +86,6 @@ class Snake:
             )
             self.body_parts.insert(0, body_part)
 
-    def handle_keypress(self, event):
-        self.next_direction = event.keysym
-
     def valid_next_direction(self):
         if (self.next_direction == 'Right' and self.direction == 'Left') or \
                 (self.next_direction == 'Left' and self.direction == 'Right') or \
@@ -71,13 +96,13 @@ class Snake:
             return True
 
     def hit_wall(self):
-        if self.direction == 'Right' and self.next_head_coords[2] > game_width:
+        if self.direction == 'Right' and self.next_head_coords[2] > int(self.canvas['width']):
             return True
         elif self.direction == 'Left' and self.next_head_coords[0] < 0:
             return True
         elif self.direction == 'Up' and self.next_head_coords[1] < 0:
             return True
-        elif self.direction == 'Down' and self.next_head_coords[3] > game_height:
+        elif self.direction == 'Down' and self.next_head_coords[3] > int(self.canvas['height']):
             return True
         else:
             return False
@@ -95,17 +120,11 @@ class Snake:
             return True
         return False
 
-    def draw(self):
+    def move(self):
         if self.valid_next_direction():
             self.direction = self.next_direction
         else:
             self.direction = self.direction
-
-        if self.check_if_dead():
-            game_over_text = self.canvas.create_text(game_width/2, game_height/2)
-            self.canvas.itemconfig(game_over_text, text='GAME OVER')
-            self.canvas.itemconfig(self.head, fill='red')
-            return
 
         # Update body
         for i, body_part in enumerate(self.body_parts):
@@ -127,8 +146,6 @@ class Snake:
                     self.next_head_coords[3]
                 )
 
-        self.canvas.after(1000, self.draw)
-
 
 if __name__ == '__main__':
     window = Tk()
@@ -136,12 +153,7 @@ if __name__ == '__main__':
     window.resizable(0, 0)
     window.attributes('-topmost', True)  # TODO: remove after development
 
-    game_width, game_height = 600, 600
-
-    canvas = Canvas(window, width=game_width, height=game_height, bd=0)
-    canvas.pack()
-
-    snake = Snake(canvas)
-    snake.draw()
+    game = Game()
+    game.draw()
 
     window.mainloop()
