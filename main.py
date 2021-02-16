@@ -25,6 +25,8 @@ class Game:
         self.canvas.itemconfig(self.snake.head, fill='red')
 
     def draw(self):
+        self.snake.set_direction()
+
         if self.snake.check_if_dead():
             self.end()
             return
@@ -120,12 +122,13 @@ class Snake:
             return True
         return False
 
-    def move(self):
+    def set_direction(self):
         if self.valid_next_direction():
             self.direction = self.next_direction
         else:
             self.direction = self.direction
 
+    def move(self):
         # Update body
         for i, body_part in enumerate(self.body_parts):
             if body_part != self.head:
