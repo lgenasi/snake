@@ -121,3 +121,4 @@ class Snake:
                 )
         if self.new_tail:
             self.body_parts.insert(0, self.new_tail)
+            self.new_tail = None
