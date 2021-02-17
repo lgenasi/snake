@@ -22,6 +22,14 @@ class Snake:
         return self.get_coords(self.head)
 
     @property
+    def tail(self):
+        return self.body_parts[0]
+
+    @property
+    def tail_coords(self):
+        return self.get_coords(self.tail)
+
+    @property
     def next_head_coords(self):
         next_head_coords = self.get_next_coords(coords=self.head_coords, direction=self.direction)
         return next_head_coords
@@ -56,8 +64,7 @@ class Snake:
         self.body_parts.insert(0, head)
 
         for x in range(0, self.length):
-            parent_body_part = self.get_coords(self.body_parts[0])
-            body_part_coords = self.get_next_coords(coords=parent_body_part, direction=opposite(self.direction))
+            body_part_coords = self.get_next_coords(coords=self.tail_coords, direction=opposite(self.direction))
             self.add_body_part(body_part_coords)
 
     def add_body_part(self, coords):
@@ -72,17 +79,16 @@ class Snake:
         return body_part
 
     def grow(self):
-        current_tail_coords = self.get_coords(self.body_parts[0])
-        previous_tail_coords = self.get_coords(self.body_parts[1])
+        tail_parent_coords = self.get_coords(self.body_parts[1])
 
-        if current_tail_coords.y1 < previous_tail_coords.y1:
-            new_tail_coords = self.get_next_coords(coords=current_tail_coords, direction='Up')
-        elif current_tail_coords.y1 > previous_tail_coords.y1:
-            new_tail_coords = self.get_next_coords(coords=current_tail_coords, direction='Down')
-        elif current_tail_coords.x1 < previous_tail_coords.x1:
-            new_tail_coords = self.get_next_coords(coords=current_tail_coords, direction='Left')
-        elif current_tail_coords.x1 > previous_tail_coords.x1:
-            new_tail_coords = self.get_next_coords(coords=current_tail_coords, direction='Right')
+        if self.tail_coords.y1 < tail_parent_coords.y1:
+            new_tail_coords = self.get_next_coords(coords=self.tail_coords, direction='Up')
+        elif self.tail_coords.y1 > tail_parent_coords.y1:
+            new_tail_coords = self.get_next_coords(coords=self.tail_coords, direction='Down')
+        elif self.tail_coords.x1 < tail_parent_coords.x1:
+            new_tail_coords = self.get_next_coords(coords=self.tail_coords, direction='Left')
+        elif self.tail_coords.x1 > tail_parent_coords.x1:
+            new_tail_coords = self.get_next_coords(coords=self.tail_coords, direction='Right')
 
         self.add_body_part(new_tail_coords)
 
@@ -99,8 +105,8 @@ class Snake:
             return False
 
     def hit_body(self):
-        for body_part in self.body_parts[1:]:
-            if self.next_head_coords == self.get_coords(body_part):
+        for body_part in self.body_parts:
+            if (self.next_head_coords == self.get_coords(body_part)) and (body_part != self.tail):
                 return True
         return False
 
