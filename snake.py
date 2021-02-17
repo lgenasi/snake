@@ -1,6 +1,10 @@
+from coords import Coords
+
+
 class Snake:
-    def __init__(self, canvas, length=10, size=20):
+    def __init__(self, canvas, length=3, size=20):
         self.canvas = canvas
+
         self.length = length
         self.size = size
 
@@ -8,7 +12,6 @@ class Snake:
         self.next_direction = self.direction
 
         self.body_parts = []
-        self.new_tail = None
 
     @property
     def head(self):
@@ -16,65 +19,88 @@ class Snake:
 
     @property
     def head_coords(self):
-        return self.canvas.coords(self.head)
+        return self.get_coords(self.head)
 
     @property
     def next_head_coords(self):
-        next_head_coords = self.head_coords
-        if self.direction == 'Right':
-            next_head_coords[0] += self.size
-            next_head_coords[2] += self.size
-        if self.direction == 'Left':
-            next_head_coords[0] -= self.size
-            next_head_coords[2] -= self.size
-        if self.direction == 'Up':
-            next_head_coords[1] -= self.size
-            next_head_coords[3] -= self.size
-        if self.direction == 'Down':
-            next_head_coords[1] += self.size
-            next_head_coords[3] += self.size
+        next_head_coords = self.get_next_coords(coords=self.head_coords, direction=self.direction)
         return next_head_coords
+
+    def get_coords(self, body_part):
+        coords = self.canvas.coords(body_part)
+        return Coords(x1=coords[0], y1=coords[1], x2=coords[2], y2=coords[3])
+
+    def get_next_coords(self, coords, direction):
+        if direction == 'Right':
+            coords.x1 += self.size
+            coords.x2 += self.size
+        if direction == 'Left':
+            coords.x1 -= self.size
+            coords.x2 -= self.size
+        if direction == 'Up':
+            coords.y1 -= self.size
+            coords.y2 -= self.size
+        if direction == 'Down':
+            coords.y1 += self.size
+            coords.y2 += self.size
+        return coords
 
     def spawn(self, start_x, start_y):
         head = self.canvas.create_rectangle(
-            start_x, start_y, (start_x + self.size), (start_y + self.size),
+            start_x,
+            start_y,
+            start_x + self.size,
+            start_y + self.size,
             fill='dark green', outline='black'
         )
         self.body_parts.insert(0, head)
 
         for x in range(0, self.length):
-            parent_body_part = self.canvas.coords(self.body_parts[0])
-            body_part = self.canvas.create_rectangle(
-                parent_body_part[0] - self.size, parent_body_part[1],
-                parent_body_part[2] - self.size, parent_body_part[3],
-                fill='light green', outline='black'
-            )
-            self.body_parts.insert(0, body_part)
+            parent_body_part = self.get_coords(self.body_parts[0])
+            body_part_coords = self.get_next_coords(coords=parent_body_part, direction=opposite(self.direction))
+            self.add_body_part(body_part_coords)
 
-    def valid_next_direction(self):
-        if (self.next_direction == 'Right' and self.direction == 'Left') or \
-                (self.next_direction == 'Left' and self.direction == 'Right') or \
-                (self.next_direction == 'Up' and self.direction == 'Down') or \
-                (self.next_direction == 'Down' and self.direction == 'Up'):
-            return False
-        else:
-            return True
+    def add_body_part(self, coords):
+        body_part = self.canvas.create_rectangle(
+            coords.x1,
+            coords.y1,
+            coords.x2,
+            coords.y2,
+            fill='light green', outline='black'
+        )
+        self.body_parts.insert(0, body_part)
+        return body_part
+
+    def grow(self):
+        current_tail_coords = self.get_coords(self.body_parts[0])
+        previous_tail_coords = self.get_coords(self.body_parts[1])
+
+        if current_tail_coords.y1 < previous_tail_coords.y1:
+            new_tail_coords = self.get_next_coords(coords=current_tail_coords, direction='Up')
+        elif current_tail_coords.y1 > previous_tail_coords.y1:
+            new_tail_coords = self.get_next_coords(coords=current_tail_coords, direction='Down')
+        elif current_tail_coords.x1 < previous_tail_coords.x1:
+            new_tail_coords = self.get_next_coords(coords=current_tail_coords, direction='Left')
+        elif current_tail_coords.x1 > previous_tail_coords.x1:
+            new_tail_coords = self.get_next_coords(coords=current_tail_coords, direction='Right')
+
+        self.add_body_part(new_tail_coords)
 
     def hit_wall(self):
-        if self.direction == 'Right' and self.next_head_coords[2] > int(self.canvas['width']):
+        if self.direction == 'Right' and self.next_head_coords.x2 > int(self.canvas['width']):
             return True
-        elif self.direction == 'Left' and self.next_head_coords[0] < 0:
+        elif self.direction == 'Left' and self.next_head_coords.x1 < 0:
             return True
-        elif self.direction == 'Up' and self.next_head_coords[1] < 0:
+        elif self.direction == 'Up' and self.next_head_coords.y1 < 0:
             return True
-        elif self.direction == 'Down' and self.next_head_coords[3] > int(self.canvas['height']):
+        elif self.direction == 'Down' and self.next_head_coords.y2 > int(self.canvas['height']):
             return True
         else:
             return False
 
     def hit_body(self):
         for body_part in self.body_parts[1:]:
-            if self.next_head_coords == self.canvas.coords(body_part):
+            if self.next_head_coords == self.get_coords(body_part):
                 return True
         return False
 
@@ -86,39 +112,27 @@ class Snake:
         return False
 
     def set_direction(self):
-        if self.valid_next_direction():
+        if self.next_direction != opposite(self.direction):
             self.direction = self.next_direction
-        else:
-            self.direction = self.direction
 
-    def grow(self):
-        current_tail_coords = self.canvas.coords(self.body_parts[0])
-        self.new_tail = self.canvas.create_rectangle(
-            current_tail_coords[0], current_tail_coords[1],
-            current_tail_coords[2], current_tail_coords[3],
-            fill='light green', outline='black'
-        )
+    def move_body_part(self, body_part, new_coords):
+        self.canvas.coords(body_part, new_coords.x1, new_coords.y1, new_coords.x2, new_coords.y2)
 
     def move(self):
-        # Update body
         for i, body_part in enumerate(self.body_parts):
             if body_part != self.head:
-                parent_body_part = self.canvas.coords(self.body_parts[i + 1])
-                self.canvas.coords(
-                    body_part,
-                    parent_body_part[0],
-                    parent_body_part[1],
-                    parent_body_part[2],
-                    parent_body_part[3],
-                )
+                parent_body_part_coords = self.get_coords(self.body_parts[i + 1])
+                self.move_body_part(body_part=body_part, new_coords=parent_body_part_coords)
             else:
-                self.canvas.coords(
-                    self.head,
-                    self.next_head_coords[0],
-                    self.next_head_coords[1],
-                    self.next_head_coords[2],
-                    self.next_head_coords[3]
-                )
-        if self.new_tail:
-            self.body_parts.insert(0, self.new_tail)
-            self.new_tail = None
+                self.move_body_part(body_part=self.head, new_coords=self.next_head_coords)
+
+
+def opposite(direction):
+    if direction == 'Right':
+        return 'Left'
+    elif direction == 'Left':
+        return 'Right'
+    elif direction == 'Up':
+        return 'Down'
+    elif direction == 'Down':
+        return 'Up'

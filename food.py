@@ -1,5 +1,7 @@
 import random
 
+from coords import Coords
+
 
 class Food:
     def __init__(self, canvas, size=10):
@@ -9,7 +11,12 @@ class Food:
 
     @property
     def coords(self):
-        return self.canvas.coords(self.id)
+        coords = self.canvas.coords(self.id)
+        return Coords(x1=coords[0], y1=coords[1], x2=coords[2], y2=coords[3])
+
+    def respawn(self):
+        self.canvas.delete(self.id)
+        self.spawn()
 
     def spawn(self):
         game_width = int(self.canvas['width'])
@@ -20,9 +27,6 @@ class Food:
 
         random_x1 = (20 * random_multiplier_x) + 5
         random_y1 = (20 * random_multiplier_y) + 5
-
-        # random_x1 = 365
-        # random_y1 = 305
 
         self.id = self.canvas.create_oval(
             random_x1, random_y1,

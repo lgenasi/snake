@@ -5,7 +5,7 @@ from food import Food
 
 
 class Game:
-    def __init__(self, width=600, height=600, speed=100):
+    def __init__(self, width=400, height=400, speed=150):
         self.width = width
         self.height = height
         self.speed = speed
@@ -17,7 +17,7 @@ class Game:
         self.canvas.bind('<Key>', self.set_snake_direction)
 
         self.snake = Snake(self.canvas)
-        self.snake.spawn(start_x=300, start_y=300)
+        self.snake.spawn(start_x=100, start_y=100)
 
         self.food = Food(self.canvas)
         self.food.spawn()
@@ -31,8 +31,8 @@ class Game:
         self.canvas.itemconfig(self.snake.head, fill='red')
 
     def snake_has_eaten_food(self):
-        if (self.snake.head_coords[0] < self.food.coords[0] < self.snake.head_coords[2]) and \
-                (self.snake.head_coords[1] < self.food.coords[1] < self.snake.head_coords[3]):
+        if (self.snake.head_coords.x1 < self.food.coords.x1 < self.snake.head_coords.x2) and \
+                (self.snake.head_coords.y1 < self.food.coords.y1 < self.snake.head_coords.y2):
             return True
         else:
             return False
@@ -47,8 +47,7 @@ class Game:
         self.snake.move()
 
         if self.snake_has_eaten_food():
-            self.canvas.delete(self.food.id)
-            self.food.spawn()
+            self.food.respawn()
             self.snake.grow()
 
         self.canvas.after(self.speed, self.draw)
